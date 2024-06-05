@@ -1,13 +1,22 @@
 ---
+import IconStudio from "../components/IconStudio";
 import Layout from "../layouts/Layout.astro";
 import Card from "../components/Card.astro";
+import ChannelPreviewStudio from "../components/ChannelPreviewStudio.astro";
+
+fetch("http://localhost:5735/channels.txt")
+	.then((res) => res.text())
+	.then((data) => {
+		console.log(data);
+	});
 ---
 
 <Layout title="Welcome to Astro.">
 	<main>
 		<h1>JSALStats <span class="text-gradient">Site</span></h1>
-		<p class="instructions">Returning for 2024 soon</p>
+		<p class="instructions"><IconStudio /> means data comes from the Studio!</p>
 		<ul role="list" class="link-card-grid">
+			<ChannelPreviewStudio />
 			<Card
 				href="https://github.com/jsalstats"
 				title="GitHub"
@@ -19,7 +28,6 @@ import Card from "../components/Card.astro";
 				body="Links to my personal account for now, but there will be updates there"
 			/>
 		</ul>
-		<!-- If you're looking through the commit history, why are you surprised I just committed the astro template. There's nothing of interest here -->
 	</main>
 </Layout>
 
@@ -79,7 +87,7 @@ import Card from "../components/Card.astro";
 	}
 	.link-card-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(1fr));
 		gap: 2rem;
 		padding: 0;
 	}

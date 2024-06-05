@@ -10,8 +10,20 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^4.7.0",
     "@astrojs/check": "^0.5.10",
+    "@astrojs/react": "^3.4.0",
+    "@fontsource/ubuntu": "^5.0.13",
+    "astro": "^4.7.0",
+    "highcharts": "^11.4.3",
+    "highstock-release": "^6.0.4",
+    "odometer": "^0.4.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.2.1",
+    "react-jsx-highcharts": "^5.0.1",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss": "^3.4.3",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
