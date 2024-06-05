@@ -3,20 +3,28 @@ import IconStudio from "../components/IconStudio";
 import Layout from "../layouts/Layout.astro";
 import Card from "../components/Card.astro";
 import ChannelPreviewStudio from "../components/ChannelPreviewStudio.astro";
+import ChannelPreview from "../components/ChannelPreview.astro";
 
-fetch("http://localhost:5735/channels.txt")
-	.then((res) => res.text())
+let channelsToFetch: string[] = []
+await fetch("http://localhost:5735/channels.json")
+	.then((res) => res.json())
 	.then((data) => {
-		console.log(data);
+		channelsToFetch = data.nonstudio;
 	});
 ---
 
-<Layout title="Welcome to Astro.">
+<Layout title="Home">
 	<main>
 		<h1>JSALStats <span class="text-gradient">Site</span></h1>
 		<p class="instructions"><IconStudio /> means data comes from the Studio!</p>
 		<ul role="list" class="link-card-grid">
 			<ChannelPreviewStudio />
+		</ul>
+		<p class="instructions">Non Studio Channels! Subscriber counts are abbreviated</p>
+		<ul role="list" class="link-card-grid">
+			{channelsToFetch.map((channelId) => (
+				<ChannelPreview channelId={channelId} />
+			))}
 			<Card
 				href="https://github.com/jsalstats"
 				title="GitHub"

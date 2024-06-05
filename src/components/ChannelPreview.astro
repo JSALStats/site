@@ -1,56 +1,44 @@
 ---
-import IconStudio from "../components/IconStudio";
+interface Props {
+    channelId: string;
+}
+
+const { channelId } = Astro.props;
 
 const {
-    countNoContext,
-    countJSAC,
+    channelName,
+    channelSubCount,
+    channelIcon,
 }: {
-    countNoContext: number | null;
-    countJSAC: number | null;
+    channelName: string | null;
+    channelSubCount: number | null;
+    channelIcon: string | null;
 } = await new Promise<{
-    countNoContext: number | null;
-    countJSAC: number | null;
+    channelName: string | null;
+    channelSubCount: number | null;
+    channelIcon: string | null;
 }>(async (resolve, reject) => {
     try {
         const response = await fetch(
-            "https://jackstudio.stats100.xyz/subcount",
+            `https://nia-statistics.com/api/get?platform=youtube&type=channel&id=${channelId}`,
         );
         const data = await response.json();
         return resolve({
-            countNoContext: data.UCrZKnWgOaYTTc7sc1KsVXZw,
-            countJSAC: data.UCUXNOmIdsoyd5fh5TZHHO5Q,
+            channelName: data.snippet.title.length > 30 ? data.snippet.title.slice(0,30) + '...' : data.snippet.title,
+            channelSubCount: data.apiSubCount,
+            channelIcon: data.snippet.thumbnails.medium.url,
         });
     } catch (e) {
         return reject(e);
     }
-}).catch((error) => {
-    console.error(error);
-    return {
-        countNoContext: null,
-        countJSAC: null,
-    };
 });
-console.log({ countNoContext, countJSAC });
 ---
 
 <li class="link-card">
-    <img
-        src="https://yt3.googleusercontent.com/qu4SxGtuv1e-nfZgPoCeIbRJ-k5uJLeqB2z3H-H18nrnZ9e7nSEMadcKkKlojztdslZwr-Ic=s176-c-k-c0x00ffffff-no-rj"
-        alt="JSAC Logo"
-    />
+    <img src={channelIcon} alt={`PFP of ${channelName}`} />
     <span>
-        <h2>JackSucksAtClips <IconStudio /></h2>
-        <p>{countJSAC?.toLocaleString()} Subscribers</p>
-    </span>
-</li>
-<li class="link-card">
-    <img
-        src="https://yt3.googleusercontent.com/mj45R5maavRfU_Zjm2UaCjjZr96TZAPWUCMA8_zzT5YtpCBo1amqvuHSg0qS-ogMHNG1mxzT=s176-c-k-c0x00ffffff-no-rj"
-        alt="No Context Logo"
-    />
-    <span>
-        <h2>No Context JackSucksAtLife <IconStudio /></h2>
-        <p>{countNoContext?.toLocaleString()} Subscribers</p>
+        <h2>{channelName}</h2>
+        <p>{channelSubCount?.toLocaleString()} Subscribers</p>
     </span>
 </li>
 <style>
@@ -66,6 +54,7 @@ console.log({ countNoContext, countJSAC });
         background-position: 100%;
         transition: background-position 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        max-width: 800px;
     }
     .link-card img {
         width: 125px; /* Adjust image size as needed */

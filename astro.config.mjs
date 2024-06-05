@@ -3,8 +3,7 @@ import react from '@astrojs/react';
 
 export default defineConfig({
     integrations: [
-        react({
-            // experimentalReactChildren: true
-        })
+        react({})
     ],
+    output: 'server'
 });
