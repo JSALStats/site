@@ -1,45 +1,61 @@
 ---
 import IconStudio from "../components/IconStudio";
 import Layout from "../layouts/Layout.astro";
-import Card from "../components/Card.astro";
 import ChannelPreviewStudio from "../components/ChannelPreviewStudio.astro";
 import ChannelPreview from "../components/ChannelPreview.astro";
 
-let channelsToFetch: string[] = []
-await fetch("http://localhost:5735/channels.json")
+let channelsToFetch: string[] = [];
+await fetch(`http://localhost:${process.env.PORT}/channels`)
 	.then((res) => res.json())
 	.then((data) => {
 		channelsToFetch = data.nonstudio;
 	});
 ---
 
-<Layout title="Home">
+<Layout title="Home" description="Home of JSALStats">
 	<main>
-		<h1>JSALStats <span class="text-gradient">Site</span></h1>
-		<p class="instructions"><IconStudio /> means data comes from the Studio!</p>
+		<h1>
+			JSALStats <span class="text-gradient">Site<small>ALPHA</small></span
+			>
+		</h1>
+		<p class="instructions">
+			⚠️ JSALStats.xyz is in <b>ALPHA</b><br />The site will be broken or
+			feeling lacklustre before going into beta<br />Last Updated: <b
+				>19/06/24</b
+			><br />
+			Report bugs on either <a href="https://twitter.com/reallygalvin"
+				>Twitter</a
+			> or on <a href="https://github.com/JSALStats/site/issues">GitHub</a
+			><br /><br />
+			<b
+				>You can only see the subscriber counts of the channels for the
+				moment. More will be added!</b
+			><br />
+			Please note that all the code is on the "dev" branch
+		</p>
+		<p class="instructions">
+			<IconStudio /> means data comes from the Studio!
+		</p>
 		<ul role="list" class="link-card-grid">
 			<ChannelPreviewStudio />
 		</ul>
-		<p class="instructions">Non Studio Channels! Subscriber counts are abbreviated</p>
+		<p class="instructions">
+			Non Studio Channels! Subscriber counts are abbreviated
+		</p>
 		<ul role="list" class="link-card-grid">
-			{channelsToFetch.map((channelId) => (
-				<ChannelPreview channelId={channelId} />
-			))}
-			<Card
-				href="https://github.com/jsalstats"
-				title="GitHub"
-				body="Most projects are going to be open-sourced, meaning you can look at the code for this site here!"
-			/>
-			<Card
-				href="https://twitter.com/reallygalvin"
-				title="Twitter"
-				body="Links to my personal account for now, but there will be updates there"
-			/>
+			{
+				channelsToFetch.map((channelId) => (
+					<ChannelPreview channelId={channelId} />
+				))
+			}
 		</ul>
 	</main>
 </Layout>
 
 <style>
+	small {
+		font-size: small;
+	}
 	main {
 		margin: auto;
 		padding: 1rem;
@@ -48,6 +64,9 @@ await fetch("http://localhost:5735/channels.json")
 		color: white;
 		font-size: 20px;
 		line-height: 1.6;
+	}
+	a {
+		color: white;
 	}
 	.astro-a {
 		position: absolute;
