@@ -5,7 +5,7 @@ import ChannelPreviewStudio from "../components/ChannelPreviewStudio.astro";
 import ChannelPreview from "../components/ChannelPreview.astro";
 
 let channelsToFetch: string[] = [];
-await fetch(`http://localhost:${process.env.PORT}/channels`)
+await fetch(`https://api.jsalstats.xyz/channels`)
 	.then((res) => res.json())
 	.then((data) => {
 		channelsToFetch = data.nonstudio;

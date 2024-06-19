@@ -20,7 +20,7 @@ const {
 }>(async (resolve, reject) => {
 	try {
 		const response = await fetch(
-			`http://localhost:${process.env.PORT}/channel/${channelId}`,
+			`https://api.jsalstats.xyz/channel/${channelId}`,
 		);
 
 		const data = await response.json();
