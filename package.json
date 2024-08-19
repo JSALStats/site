@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.7.0",
-    "@astrojs/node": "^8.2.5",
+    "@astrojs/node": "^8.3.3",
     "@astrojs/react": "^3.6.0",
     "@fontsource/ubuntu": "^5.0.13",
     "astro": "^4.7.0",
