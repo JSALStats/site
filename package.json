@@ -14,7 +14,7 @@
     "@astrojs/node": "^8.2.5",
     "@astrojs/react": "^3.6.0",
     "@fontsource/ubuntu": "^5.0.13",
-    "astro": "^4.7.0",
+    "astro": "^4.16.10",
     "highcharts": "^11.4.3",
     "highstock-release": "^6.0.4",
     "odometer": "^0.4.8",
