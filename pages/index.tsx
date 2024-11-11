@@ -1,6 +1,4 @@
 import { Link } from "@nextui-org/link";
-import { Snippet } from "@nextui-org/snippet";
-import { Code } from "@nextui-org/code";
 import { button as buttonStyles } from "@nextui-org/theme";
 import { SiYoutube, SiYoutubestudio } from "react-icons/si";
 import Image from "next/image";
@@ -10,6 +8,7 @@ import { title, subtitle } from "@/components/primitives";
 import { GithubIcon, TwitterIcon } from "@/components/icons";
 import DefaultLayout from "@/layouts/default";
 import { ChannelData } from "@/types/data";
+import { abbreviateNum } from "@/utils/abbreviateNum";
 
 const fetchChannelData = async (id: string) => {
     const response = await fetch(`https://api.jsalstats.xyz/channel/${id}`);
@@ -89,15 +88,6 @@ export default function IndexPage({
                 </div>
 
                 <div className="mt-8">
-                    <Snippet hideCopyButton hideSymbol variant="bordered">
-                        <span>
-                            Get started by editing{" "}
-                            <Code color="primary">pages/index.tsx</Code>
-                        </span>
-                    </Snippet>
-                </div>
-
-                <div className="mt-8">
                     <h2
                         className={title()}
                         style={{ display: "flex", alignItems: "center" }}
@@ -109,30 +99,33 @@ export default function IndexPage({
                         Studio Channels
                     </h2>
                     <div className="flex flex-wrap gap-2 mt-2 mb-2">
-                        {channels.studio.map((channel) => (
-                            <Link
-                                key={channel.info.name}
-                                isExternal
-                                className={buttonStyles({
-                                    color: "danger",
-                                    radius: "full",
-                                    variant: "shadow",
-                                    class: "flex items-center",
-                                })}
-                                href={`/channel/${channel.info.channelId}`}
-                            >
-                                <Image
-                                    alt={channel.info.name}
-                                    className="w-10 h-10 rounded-full mr-2"
-                                    height={256}
-                                    src={channel.info.channelIcon}
-                                    width={256}
-                                />
-                                {channel.info.name.length > 30
-                                    ? `${channel.info.name.substring(0, 30)}...`
-                                    : channel.info.name}
-                            </Link>
-                        ))}
+                        {channels.studio
+                            .sort((a, b) => b.data.subsApi - a.data.subsApi)
+                            .map((channel) => (
+                                <Link
+                                    key={channel.info.name}
+                                    isExternal
+                                    className={buttonStyles({
+                                        color: "danger",
+                                        radius: "full",
+                                        variant: "shadow",
+                                        class: "flex items-center",
+                                    })}
+                                    href={`/channel/${channel.info.channelId}`}
+                                >
+                                    <Image
+                                        alt={channel.info.name}
+                                        className="w-10 h-10 rounded-full mr-2"
+                                        height={256}
+                                        src={channel.info.channelIcon}
+                                        width={256}
+                                    />
+                                    {channel.info.name.length > 30
+                                        ? `${channel.info.name.substring(0, 30)}...`
+                                        : channel.info.name}{" "}
+                                    &bull; {abbreviateNum(channel.data.subsApi)}
+                                </Link>
+                            ))}
                     </div>
                     <h2
                         className={title()}
@@ -149,30 +142,33 @@ export default function IndexPage({
                         Non-Studio Channels
                     </h2>
                     <div className="flex flex-wrap gap-2 mt-2 mb-2">
-                        {channels.nonstudio.map((channel) => (
-                            <Link
-                                key={channel.info.name}
-                                isExternal
-                                className={buttonStyles({
-                                    color: "primary",
-                                    radius: "full",
-                                    variant: "shadow",
-                                    class: "flex items-center",
-                                })}
-                                href={`/channel/${channel.info.channelId}`}
-                            >
-                                <Image
-                                    alt={channel.info.name}
-                                    className="w-10 h-10 rounded-full mr-2"
-                                    height={256}
-                                    src={channel.info.channelIcon}
-                                    width={256}
-                                />
-                                {channel.info.name.length > 30
-                                    ? `${channel.info.name.substring(0, 30)}...`
-                                    : channel.info.name}
-                            </Link>
-                        ))}
+                        {channels.nonstudio
+                            .sort((a, b) => b.data.subsApi - a.data.subsApi)
+                            .map((channel) => (
+                                <Link
+                                    key={channel.info.name}
+                                    isExternal
+                                    className={buttonStyles({
+                                        color: "primary",
+                                        radius: "full",
+                                        variant: "shadow",
+                                        class: "flex items-center",
+                                    })}
+                                    href={`/channel/${channel.info.channelId}`}
+                                >
+                                    <Image
+                                        alt={channel.info.name}
+                                        className="w-10 h-10 rounded-full mr-2"
+                                        height={256}
+                                        src={channel.info.channelIcon}
+                                        width={256}
+                                    />
+                                    {channel.info.name.length > 30
+                                        ? `${channel.info.name.substring(0, 30)}...`
+                                        : channel.info.name}{" "}
+                                    &bull; {abbreviateNum(channel.data.subsApi)}
+                                </Link>
+                            ))}
                     </div>
                 </div>
             </section>
