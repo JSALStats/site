@@ -3,7 +3,12 @@ import fs from "fs/promises";
 import express from "express";
 import cors from "cors";
 
-import { createChannelTable, getChannelData } from "./db";
+import {
+    createChannelTable,
+    createVideoHistoryTable,
+    createVideoTable,
+    getChannelData,
+} from "./db";
 const channelsData = JSON.parse(
     await fs.readFile("public/channels.json", "utf-8"),
 );
@@ -15,6 +20,8 @@ app.use(cors());
 const port = process.env.PORT || 5816;
 
 await createChannelTable();
+await createVideoTable();
+await createVideoHistoryTable();
 
 app.get("/channels", (req, res) => {
     res.status(200).json(channelsData);

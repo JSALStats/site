@@ -8,6 +8,7 @@ const pool = new pg.Pool({
     port: process.env.POSTGRES_PORT as unknown as number,
 });
 
+//#region Channels
 export async function createChannelTable() {
     const query = `
     CREATE TABLE IF NOT EXISTS anal_channels (
@@ -17,11 +18,14 @@ export async function createChannelTable() {
     );
     `;
 
+    const indexQuery = `CREATE INDEX IF NOT EXISTS idx_channel_id ON anal_channels(channel_id);`;
+
     try {
         await pool.query(query);
-        console.log("Table created successfully");
+        await pool.query(indexQuery);
+        console.log("Table and index created successfully");
     } catch (err) {
-        console.error("Error creating table", err);
+        console.error("Error creating table or index", err);
     }
 }
 
@@ -56,3 +60,89 @@ export async function getChannelData(channelId: string) {
         console.error("Error getting channel data", err);
     }
 }
+//#endregion
+
+//#region Videos
+export async function createVideoTable() {
+    const query = `
+    CREATE TABLE IF NOT EXISTS anal_videos (
+        video_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        video_uploaded TIMESTAMP NOT NULL,
+        views INTEGER NOT NULL,
+        likes INTEGER NOT NULL,
+        comments INTEGER NOT NULL,
+        last_updated BIGINT NOT NULL,
+        video_is_studio BOOLEAN NOT NULL DEFAULT FALSE
+    );
+    `;
+
+    const indexQuery = `
+    CREATE INDEX IF NOT EXISTS idx_video_id ON anal_videos(video_id);
+    CREATE INDEX IF NOT EXISTS idx_channel_id ON anal_videos(channel_id);
+    `;
+
+    try {
+        await pool.query(query);
+        await pool.query(indexQuery);
+        console.log("Table and indices created successfully");
+    } catch (err) {
+        console.error("Error creating table or indices", err);
+    }
+}
+
+export async function createVideoHistoryTable() {
+    const query = `
+    CREATE TABLE IF NOT EXISTS anal_video_history (
+        video_id TEXT NOT NULL,
+        views INTEGER NOT NULL,
+        likes INTEGER NOT NULL,
+        comments INTEGER NOT NULL,
+        entry_added TIMESTAMP NOT NULL,
+        is_24hr BOOLEAN NOT NULL DEFAULT FALSE
+    );
+    `;
+
+    const indexQuery = `
+    CREATE INDEX IF NOT EXISTS idx_video_id ON anal_video_history(video_id);
+    `;
+
+    try {
+        await pool.query(query);
+        await pool.query(indexQuery);
+        console.log("Table and indices created successfully");
+    } catch (err) {
+        console.error("Error creating table or indices", err);
+    }
+}
+
+export async function insertNewVideo(
+    videoId: string,
+    channelId: string,
+    videoUploaded: number,
+    views: number,
+    likes: number,
+    comments: number,
+    lastUpdated: number,
+    videoIsStudio: boolean,
+) {
+    const query = `INSERT INTO anal_videos (video_id, channel_id, video_uploaded, views, likes, comments, last_updated, video_is_studio) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
+    const values = [
+        videoId,
+        channelId,
+        videoUploaded,
+        views,
+        likes,
+        comments,
+        lastUpdated,
+        videoIsStudio,
+    ];
+
+    try {
+        await pool.query(query, values);
+        console.log("Video inserted successfully");
+    } catch (err) {
+        console.error("Error inserting video", err);
+    }
+}
+//#endregion
