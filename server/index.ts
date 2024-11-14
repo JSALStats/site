@@ -5,6 +5,7 @@ import cors from "cors";
 
 import {
     createChannelTable,
+    createStudioChannelTable,
     createVideoHistoryTable,
     createVideoTable,
     getChannelData,
@@ -20,8 +21,11 @@ app.use(cors());
 const port = process.env.PORT || 5816;
 
 await createChannelTable();
+await createStudioChannelTable();
 await createVideoTable();
 await createVideoHistoryTable();
+
+import "./cron";
 
 app.get("/channels", (req, res) => {
     res.status(200).json(channelsData);

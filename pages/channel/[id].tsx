@@ -250,13 +250,10 @@ class IndexPage extends Component<{}, PageState> {
     }
 
     fetchData = () => {
-        // TODO: https://github.com/JSALStats/site/issues/45
         if (
             this.state.channelIsStudio == false ||
             this.state.channelId == null ||
-            (this.state.channelId != "UCrZKnWgOaYTTc7sc1KsVXZw" &&
-                this.state.channelId != "UCUXNOmIdsoyd5fh5TZHHO5Q" &&
-                this.state.channelId != "UCxLIJccyaRQDeyu6RzUsPuw")
+            !this.state.channelIsStudio
         ) {
             return;
         } else {
