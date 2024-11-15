@@ -7,8 +7,6 @@ on:
     paths:
       - "**/package.json"
       - "**/bun.lockb"
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write

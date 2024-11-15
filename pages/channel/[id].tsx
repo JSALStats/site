@@ -12,9 +12,11 @@ interface PageState {
     hasError: boolean;
     isLoading: boolean;
     odometerSubs: number;
+    studioSubsChartOptions: any;
     analChartOptions: any;
     channelId: string;
     data: ChannelData | null;
+    channelIsStudio: boolean;
 }
 
 class IndexPage extends Component<{}, PageState> {
@@ -29,7 +31,8 @@ class IndexPage extends Component<{}, PageState> {
             odometerSubs: 0,
             channelId: props.channelId,
             data: props.data,
-            analChartOptions: {
+            channelIsStudio: props.channelIsStudio,
+            studioSubsChartOptions: {
                 chart: {
                     backgroundColor: "transparent",
                     type: "line",
@@ -136,8 +139,169 @@ class IndexPage extends Component<{}, PageState> {
                     },
                 ],
             },
+            analChartOptions: {
+                chart: {
+                    backgroundColor: "transparent",
+                    type: "line",
+                    zoomType: "x",
+                },
+                title: {
+                    text: "Subscribers",
+                    style: {
+                        color: "gray",
+                        font: "Roboto Medium",
+                    },
+                },
+                xAxis: {
+                    type: "datetime",
+                    tickPixelInterval: 150,
+                    labels: {
+                        style: {
+                            color: "gray",
+                            font: "Roboto Medium",
+                        },
+                    },
+                    visible: true,
+                },
+                yAxis: {
+                    gridLineColor: "gray",
+                    title: {
+                        text: "",
+                    },
+                    labels: {
+                        style: {
+                            color: "gray",
+                            font: "Roboto Medium",
+                        },
+                    },
+                    visible: true,
+                },
+                plotOptions: {
+                    series: {
+                        threshold: null,
+                        fillOpacity: 0.25,
+                        animation: false,
+                        lineWidth: 3,
+                    },
+                    area: {
+                        fillOpacity: 0.25,
+                    },
+                },
+                credits: {
+                    enabled: true,
+                    text: "jsalstats.xyz",
+                    href: "",
+                },
+                time: {
+                    useUTC: false,
+                },
+                tooltip: {
+                    shared: true,
+                    formatter(this: any) {
+                        if (!this.points || this.points.length === 0) return "";
+
+                        const point = this.points[0];
+
+                        const index = point.series.xData.indexOf(point.x);
+                        const lastY = point.series.yData[index - 1];
+                        const dif = point.y - lastY;
+
+                        let r =
+                            Highcharts.dateFormat(
+                                "%A %b %e, %H:%M:%S",
+                                new Date(point.x).getTime(),
+                            ) +
+                            '<br><span style="color:black">\u25CF </span>' +
+                            point.series.name +
+                            ": <b>" +
+                            Number(point.y).toLocaleString();
+
+                        if (dif < 0) {
+                            r +=
+                                '<span style="color:#ff0000;font-weight:bold;"> (' +
+                                Number(dif).toLocaleString() +
+                                ")</span>";
+                        }
+                        if (dif > 0) {
+                            r +=
+                                '<span style="color:#00bb00;font-weight:bold;"> (+' +
+                                Number(dif).toLocaleString() +
+                                ")</span>";
+                        }
+
+                        return r;
+                    },
+                },
+                series: [
+                    {
+                        name: "Subscribers",
+                        data: [],
+                        showInLegend: false,
+                        marker: { enabled: false },
+                        color: "#ff0000",
+                        lineColor: "#ff0000",
+                        lineWidth: 4,
+                        type: "areaspline",
+                        fillOpacity: 0.1,
+                    },
+                ],
+            },
         };
     }
+
+    fetchData = () => {
+        if (
+            this.state.channelIsStudio == false ||
+            this.state.channelId == null ||
+            !this.state.channelIsStudio
+        ) {
+            return;
+        } else {
+            fetch(`https://studio.jsalstats.xyz/subcount`)
+                .then((response) => response.json())
+                .then((data) => {
+                    const subs = data[this.state.channelId];
+
+                    // Update the chart data
+                    this.setState((prevState) => {
+                        const newDataPoint = [Date.now(), subs];
+                        let updatedData = [
+                            ...prevState.studioSubsChartOptions.series[0].data,
+                            newDataPoint,
+                        ];
+
+                        if (updatedData.length > 1800) {
+                            updatedData.shift();
+                        }
+                        if (updatedData.length == 2) {
+                            console.log(updatedData[1]);
+                            if (updatedData[1][0] < updatedData[0][0] + 1000) {
+                                updatedData.shift();
+                            }
+                        }
+
+                        return {
+                            odometerSubs: subs,
+                            studioSubsChartOptions: {
+                                ...prevState.studioSubsChartOptions,
+                                series: [
+                                    {
+                                        ...prevState.studioSubsChartOptions
+                                            .series[0],
+                                        data: updatedData,
+                                    },
+                                ],
+                            },
+                            isLoading: false,
+                        };
+                    });
+                })
+                .catch((error) => {
+                    console.log(error);
+                    this.setState({ isLoading: false });
+                });
+        }
+    };
 
     fetchAnal = async () => {
         if (this.state.channelId == null || this.state.data == null) {
@@ -208,6 +372,8 @@ class IndexPage extends Component<{}, PageState> {
 
     componentDidMount() {
         this.fetchAnal();
+        this.fetchData();
+        setInterval(this.fetchData, 5000);
     }
 
     componentWillUnmount() {
@@ -226,86 +392,111 @@ class IndexPage extends Component<{}, PageState> {
             return null;
         }
 
-        return (
-            <DefaultLayout>
-                <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 max-w-[100%] ml-auto mr-auto">
-                    <div className="relative w-full p-4 rounded-lg flex flex-col justify-center items-center">
-                        {/* <Image
-                            alt="Banner"
-                            className="absolute inset-0 w-full h-full object-cover rounded-lg z-0 blur-sm"
-                            height={500}
-                            src={}
-                            width={1500}
-                        /> */}
-                        <div className="relative z-10 flex items-center bg-gray-900 p-6 rounded-full bg-opacity-90">
-                            {this.state.data ? (
-                                <Image
-                                    alt="User Avatar"
-                                    className="w-20 h-20 rounded-full mr-4 opacity-100 border-red-500 border-4"
-                                    height={174}
-                                    src={this.state.data?.info.channelIcon}
-                                    width={174}
+        if (this.state.data) {
+            return (
+                <DefaultLayout>
+                    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 max-w-[100%] ml-auto mr-auto">
+                        <div className="relative w-full p-4 rounded-lg flex flex-col justify-center items-center">
+                            {/* <Image
+                                alt="Banner"
+                                className="absolute inset-0 w-full h-full object-cover rounded-lg z-0 blur-sm"
+                                height={500}
+                                src={""}
+                                width={1500}
+                            /> */}
+                            <div className="relative z-10 flex items-center bg-gray-900 p-6 rounded-full bg-opacity-90">
+                                {this.state.data ? (
+                                    <Image
+                                        alt="User Avatar"
+                                        className="w-20 h-20 rounded-full mr-4 opacity-100 border-red-500 border-4"
+                                        height={174}
+                                        src={this.state.data?.info.channelIcon}
+                                        width={174}
+                                    />
+                                ) : null}
+                                <div>
+                                    <h2
+                                        className="text-white text-lg font-semibold  opacity-100"
+                                        style={{ fontSize: "32px" }}
+                                    >
+                                        {this.state.data?.info.name.length > 30
+                                            ? `${this.state.data?.info.name.slice(0, 30)}...`
+                                            : this.state.data?.info.name}
+                                    </h2>
+                                    <p
+                                        className="text-gray-500  opacity-100"
+                                        style={{ fontSize: "16px" }}
+                                    >
+                                        {this.state.channelId}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
+                            <div className="text-white text-6xl sm:text-5xl md:text-6xl lg:text-7xl">
+                                <NumberFlow
+                                    transformTiming={{
+                                        duration: 2000,
+                                        easing: "ease-out",
+                                    }}
+                                    value={this.state.odometerSubs}
                                 />
-                            ) : null}
-                            <div>
-                                <h2
-                                    className="text-white text-lg font-semibold  opacity-100"
-                                    style={{ fontSize: "32px" }}
+                            </div>
+                            <div className="text-gray-400 mt-2 center-text">
+                                Subscribers
+                            </div>
+                        </div>
+
+                        {/* Realtime Studio Subs */}
+                        {this.state.channelIsStudio && (
+                            <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
+                                <div
+                                    className={subtitle({
+                                        class: "text-center text-white",
+                                    })}
                                 >
-                                    {this.state.data?.info.name.length > 30
-                                        ? `${this.state.data?.info.name.slice(0, 30)}...`
-                                        : this.state.data?.info.name}
-                                </h2>
-                                <p
-                                    className="text-gray-500  opacity-100"
-                                    style={{ fontSize: "16px" }}
-                                >
-                                    {this.state.channelId}
+                                    Studio Count
+                                </div>
+                                <div className="w-full">
+                                    <HighchartsReact
+                                        highcharts={Highcharts}
+                                        options={
+                                            this.state.studioSubsChartOptions
+                                        }
+                                    />
+                                    <p className="text-danger text-small mt-2">
+                                        Studio counts update every 5 seconds!
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
+                            <div
+                                className={subtitle({
+                                    class: "text-center text-white",
+                                })}
+                            >
+                                Analytics
+                            </div>
+                            <div className="w-full">
+                                {this.state.analChartOptions && (
+                                    <HighchartsReact
+                                        highcharts={Highcharts}
+                                        options={this.state.analChartOptions}
+                                    />
+                                )}
+                                <p className="text-primary text-large mt-2">
+                                    Data is still being added and collected :3
                                 </p>
                             </div>
                         </div>
-                    </div>
-                    <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
-                        <div className="text-white text-6xl sm:text-5xl md:text-6xl lg:text-7xl">
-                            <NumberFlow
-                                transformTiming={{
-                                    duration: 2000,
-                                    easing: "ease-out",
-                                }}
-                                value={this.state.odometerSubs}
-                            />
-                        </div>
-                        <div className="text-gray-400 mt-2 center-text">
-                            Subscribers
-                        </div>
-                    </div>
-
-                    <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
-                        <div
-                            className={subtitle({
-                                class: "text-center text-white",
-                            })}
-                        >
-                            Analytics
-                        </div>
-                        <div className="w-full">
-                            {this.state.analChartOptions && (
-                                <HighchartsReact
-                                    highcharts={Highcharts}
-                                    options={this.state.analChartOptions}
-                                />
-                            )}
-                            <p className="text-primary text-large mt-2">
-                                Data is still being added and collected :3
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            </DefaultLayout>
-        );
+                    </section>
+                </DefaultLayout>
+            );
+        }
     }
 }
-
 export async function getServerSideProps(context: { query: { id: string } }) {
     const { id } = context.query;
 
