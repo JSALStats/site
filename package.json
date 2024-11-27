@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently 'next dev --turbo --port 5815' 'bun --watch ./server/index.ts'",
     "build": "next build",
-    "start:site": "next start --port 5815",
+    "start:site": "next start --port 5817",
     "start:server": "bun ./server/index.ts",
     "lint": "eslint . --ext .ts,.tsx -c .eslintrc.json --fix"
   },

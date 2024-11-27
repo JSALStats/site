@@ -27,16 +27,11 @@ jobChannels.start();
 jobChannelsStudio.start();
 jobVideos.start();
 
-// updateChannels();
-// updateChannelsStudio();
-// updateAllVideos();
-
 async function updateChannels() {
-    console.log("Updating channels");
     const channels = await getAllChannelIds();
     const channelIds = channels.map((channel) => channel.channel_id).join(",");
     const data = await fetch(
-        `https://youtube.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${process.env.YOUTUBE_API_KEY}`,
+        `https://youtube.nia-statistics.com/youtube/v3/channels?part=statistics,snippet&id=${channelIds}`,
     ).then((res) => res.json());
 
     for (const channel of channels) {
@@ -44,10 +39,6 @@ async function updateChannels() {
             (item: any) => item.id === channel.channel_id,
         );
         const currentSubs = channelData?.statistics?.subscriberCount;
-
-        console.log(
-            `Channel ID: ${channel.channel_id}, Old Subs: ${channel.subs_api}, New Subs: ${currentSubs}`,
-        );
 
         if (currentSubs && currentSubs != channel.subs_api) {
             insertChannel(channel.channel_id, currentSubs, Date.now());
@@ -90,7 +81,7 @@ async function updateAllVideos() {
         const videoIds = chunk.join(",");
 
         await fetch(
-            `https://youtube.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`,
+            `https://youtube.nia-statistics.com/youtube/v3/videos?part=statistics&id=${videoIds}`,
         )
             .then((res) => res.json())
             .then((data) => {

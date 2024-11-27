@@ -2,21 +2,20 @@ import React, { Component } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import NumberFlow from "@number-flow/react";
-import Image from "next/image";
 
 import DefaultLayout from "@/layouts/default";
-import { ChannelData } from "@/types/data";
 import { subtitle } from "@/components/primitives";
 
 interface PageState {
     hasError: boolean;
     isLoading: boolean;
-    odometerSubs: number;
+    odometerViews: number;
     studioSubsChartOptions: any;
     analChartOptions: any;
-    channelId: string;
-    data: ChannelData | null;
-    channelIsStudio: boolean;
+    videoId: string;
+    // TODO: VideoData type
+    data: any | null;
+    videoIsValid: boolean;
 }
 
 class IndexPage extends Component<{}, PageState> {
@@ -28,10 +27,10 @@ class IndexPage extends Component<{}, PageState> {
         this.state = {
             hasError: false,
             isLoading: true,
-            odometerSubs: 0,
-            channelId: props.channelId,
+            odometerViews: 0,
+            videoId: props.videoId,
             data: props.data,
-            channelIsStudio: props.channelIsStudio,
+            videoIsValid: props.videoIsValid,
             studioSubsChartOptions: {
                 chart: {
                     backgroundColor: "transparent",
@@ -127,7 +126,7 @@ class IndexPage extends Component<{}, PageState> {
                 },
                 series: [
                     {
-                        name: "Subscribers",
+                        name: "Views",
                         data: [],
                         showInLegend: false,
                         marker: { enabled: false },
@@ -146,7 +145,7 @@ class IndexPage extends Component<{}, PageState> {
                     zoomType: "x",
                 },
                 title: {
-                    text: "Subscribers",
+                    text: "Views",
                     style: {
                         color: "gray",
                         font: "Roboto Medium",
@@ -234,7 +233,7 @@ class IndexPage extends Component<{}, PageState> {
                 },
                 series: [
                     {
-                        name: "Subscribers",
+                        name: "Views",
                         data: [],
                         showInLegend: false,
                         marker: { enabled: false },
@@ -250,17 +249,13 @@ class IndexPage extends Component<{}, PageState> {
     }
 
     fetchData = () => {
-        if (
-            this.state.channelIsStudio == false ||
-            this.state.channelId == null ||
-            !this.state.channelIsStudio
-        ) {
+        if (this.state.videoId == null || !this.state.videoIsValid) {
             return;
         } else {
             fetch(`https://studio.jsalstats.xyz/subcount`)
                 .then((response) => response.json())
                 .then((data) => {
-                    const subs = data[this.state.channelId];
+                    const subs = data[this.state.videoId];
 
                     // Update the chart data
                     this.setState((prevState) => {
@@ -274,13 +269,14 @@ class IndexPage extends Component<{}, PageState> {
                             updatedData.shift();
                         }
                         if (updatedData.length == 2) {
+                            console.log(updatedData[1]);
                             if (updatedData[1][0] < updatedData[0][0] + 1000) {
                                 updatedData.shift();
                             }
                         }
 
                         return {
-                            odometerSubs: subs,
+                            odometerViews: subs,
                             studioSubsChartOptions: {
                                 ...prevState.studioSubsChartOptions,
                                 series: [
@@ -296,29 +292,29 @@ class IndexPage extends Component<{}, PageState> {
                     });
                 })
                 .catch((error) => {
-                    console.error(error);
+                    console.log(error);
                     this.setState({ isLoading: false });
                 });
         }
     };
 
     fetchAnal = async () => {
-        if (this.state.channelId == null || this.state.data == null) {
+        if (this.state.videoId == null || this.state.data == null) {
             return;
         } else {
             try {
                 const response = await fetch(
-                    `/api/channel/${this.state.channelId}`,
+                    `/api/video/${this.state.videoId}`,
                 );
 
                 if (response.status === 200) {
                     const data = await response.json();
                     const updatedData = data
                         .filter((entry: any, index: number, array: any[]) => {
-                            const entryDate = new Date(entry.subs_api_hit);
+                            const entryDate = new Date(entry.time);
                             const nextEntryDate =
                                 index < array.length - 1
-                                    ? new Date(array[index + 1].subs_api_hit)
+                                    ? new Date(array[index + 1].time)
                                     : null;
 
                             return (
@@ -329,19 +325,13 @@ class IndexPage extends Component<{}, PageState> {
                             );
                         })
                         .map((entry: any) => [
-                            new Date(entry.subs_api_hit).getTime(),
-                            entry.subs_api,
+                            new Date(entry.time).getTime(),
+                            entry.views,
                         ])
                         .sort(
                             (a: [number, number], b: [number, number]) =>
                                 a[0] - b[0],
                         );
-
-                    // Add the current timestamp to the data
-                    updatedData.push([
-                        new Date().getTime(),
-                        this.state.data?.data.subsApi || 0,
-                    ]);
 
                     this.setState((prevState) => ({
                         analChartOptions: {
@@ -353,9 +343,7 @@ class IndexPage extends Component<{}, PageState> {
                                 },
                             ],
                         },
-                        odometerSubs: this.state.channelIsStudio
-                            ? prevState.odometerSubs
-                            : this.state.data?.data.subsApi || 0,
+                        odometerViews: 0 || 0,
                     }));
                 } else {
                     this.setState({
@@ -372,9 +360,8 @@ class IndexPage extends Component<{}, PageState> {
     };
 
     componentDidMount() {
+        // this.fetchData();
         this.fetchAnal();
-        this.fetchData();
-        setInterval(this.fetchData, 5000);
     }
 
     componentWillUnmount() {
@@ -384,13 +371,15 @@ class IndexPage extends Component<{}, PageState> {
     }
 
     render() {
-        if (this.state.channelId == null || this.state.data == null) {
+        if (
+            this.state.videoId == null ||
+            this.state.data == null ||
+            !this.state.videoIsValid
+        ) {
             // Redirect to 404
             if (typeof window != "undefined") {
                 window.location.href = "/404";
             }
-
-            return null;
         }
 
         if (this.state.data) {
@@ -406,7 +395,7 @@ class IndexPage extends Component<{}, PageState> {
                                 width={1500}
                             /> */}
                             <div className="relative z-10 flex items-center bg-gray-900 p-6 rounded-full bg-opacity-90">
-                                {this.state.data ? (
+                                {/* {this.state.data ? (
                                     <Image
                                         alt="User Avatar"
                                         className="w-20 h-20 rounded-full mr-4 opacity-100 border-red-500 border-4"
@@ -414,8 +403,8 @@ class IndexPage extends Component<{}, PageState> {
                                         src={this.state.data?.info.channelIcon}
                                         width={174}
                                     />
-                                ) : null}
-                                <div>
+                                ) : null} */}
+                                {/* <div>
                                     <h2
                                         className="text-white text-lg font-semibold  opacity-100"
                                         style={{ fontSize: "32px" }}
@@ -428,9 +417,9 @@ class IndexPage extends Component<{}, PageState> {
                                         className="text-gray-500  opacity-100"
                                         style={{ fontSize: "16px" }}
                                     >
-                                        {this.state.channelId}
+                                        {this.state.videoId}
                                     </p>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                         <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
@@ -440,37 +429,13 @@ class IndexPage extends Component<{}, PageState> {
                                         duration: 2000,
                                         easing: "ease-out",
                                     }}
-                                    value={this.state.odometerSubs}
+                                    value={this.state.odometerViews}
                                 />
                             </div>
                             <div className="text-gray-400 mt-2 center-text">
-                                Subscribers
+                                Views
                             </div>
                         </div>
-
-                        {/* Realtime Studio Subs */}
-                        {this.state.channelIsStudio && (
-                            <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
-                                <div
-                                    className={subtitle({
-                                        class: "text-center text-white",
-                                    })}
-                                >
-                                    Studio Count
-                                </div>
-                                <div className="w-full">
-                                    <HighchartsReact
-                                        highcharts={Highcharts}
-                                        options={
-                                            this.state.studioSubsChartOptions
-                                        }
-                                    />
-                                    <p className="text-danger text-small mt-2">
-                                        Studio counts update every 5 seconds!
-                                    </p>
-                                </div>
-                            </div>
-                        )}
 
                         <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
                             <div
@@ -502,19 +467,14 @@ export async function getServerSideProps(context: { query: { id: string } }) {
     const { id } = context.query;
 
     try {
-        const res = await fetch(`https://api.jsalstats.xyz/channel/${id}`);
-        const channelIsStudio = await fetch(`http://localhost:5816/channels`)
-            .then((res) => res.json())
-            .then((data) => {
-                return data.studio.includes(id);
-            });
+        const res = await fetch(`http://localhost:5816/analytics/video/${id}`);
 
         if (!res.ok) {
             return {
                 props: {
-                    channelId: id,
+                    videoId: id,
                     data: null,
-                    channelIsStudio: false,
+                    videoIsValid: false,
                 },
             };
         }
@@ -523,9 +483,9 @@ export async function getServerSideProps(context: { query: { id: string } }) {
 
         return {
             props: {
-                channelId: id,
+                videoId: id,
                 data: data,
-                channelIsStudio: channelIsStudio,
+                videoIsValid: true,
             },
         };
     } catch (error) {
@@ -533,9 +493,9 @@ export async function getServerSideProps(context: { query: { id: string } }) {
 
         return {
             props: {
-                channelId: id,
+                videoId: id,
                 data: null,
-                channelIsStudio: false,
+                videoIsValid: false,
             },
         };
     }

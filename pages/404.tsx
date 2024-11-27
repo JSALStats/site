@@ -19,7 +19,6 @@ export default function IndexPage() {
                 </div>
 
                 <Link
-                    isExternal
                     className={buttonStyles({
                         variant: "bordered",
                         radius: "full",

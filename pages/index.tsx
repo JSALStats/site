@@ -104,7 +104,6 @@ export default function IndexPage({
                             .map((channel) => (
                                 <Link
                                     key={channel.info.name}
-                                    isExternal
                                     className={buttonStyles({
                                         color: "danger",
                                         radius: "full",
@@ -147,7 +146,6 @@ export default function IndexPage({
                             .map((channel) => (
                                 <Link
                                     key={channel.info.name}
-                                    isExternal
                                     className={buttonStyles({
                                         color: "primary",
                                         radius: "full",

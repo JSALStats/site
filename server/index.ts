@@ -4,11 +4,13 @@ import express from "express";
 import cors from "cors";
 
 import {
+    checkIfVideoExists,
     createChannelTable,
     createStudioChannelTable,
     createVideoHistoryTable,
     createVideoTable,
     getChannelData,
+    getVideoData,
 } from "./db";
 const channelsData = JSON.parse(
     await fs.readFile("public/channels.json", "utf-8"),
@@ -31,6 +33,34 @@ app.get("/channels", (req, res) => {
     res.status(200).json(channelsData);
 });
 
+app.get("/checkvideo/:videoid", async (req, res) => {
+    const videoId = req.params.videoid;
+
+    const data = await checkIfVideoExists(videoId);
+
+    if (data) {
+        res.status(200).json({ data });
+    } else {
+        res.status(404).json({ data: false });
+    }
+});
+
+app.get("/analytics/video/:videoid", (req, res) => {
+    const videoId = req.params.videoid;
+
+    getVideoData(videoId)
+        .then((data) => {
+            if (data && data?.length > 0) {
+                res.status(200).json(data);
+            } else {
+                res.status(404).json({ error: "Video not found" });
+            }
+        })
+        .catch(() => {
+            res.status(404).json({ error: "Video not found" });
+        });
+});
+
 app.get("/analytics/:channelId", async (req, res) => {
     const channelId = req.params.channelId;
 
@@ -49,6 +79,7 @@ app.get("/analytics/:channelId", async (req, res) => {
 
     return;
 });
+
 app.get("*", (req, res) => {
     res.status(404).send();
 });

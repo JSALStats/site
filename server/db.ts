@@ -60,7 +60,7 @@ export async function insertChannel(
 
     try {
         await pool.query(query, values);
-        console.log("Channel inserted successfully");
+        console.log(`Channel ${channelId} inserted successfully`);
     } catch (err) {
         console.error("Error inserting channel", err);
     }
@@ -224,7 +224,7 @@ export async function insertVideoData(
 
     try {
         await pool.query(query, values);
-        // console.log("Video history inserted successfully");
+        console.log(`New entry for video ID ${videoId} inserted successfully`);
     } catch (err) {
         console.error("Error inserting video history", err);
     }
@@ -269,8 +269,37 @@ export async function updateVideoData(
 
     try {
         await pool.query(query, values);
-        console.log("Video updated successfully");
+        console.log(`Video ${videoId} updated successfully`);
     } catch (err) {
         console.error("Error updating video", err);
+    }
+}
+
+export async function checkIfVideoExists(videoId: string): Promise<boolean> {
+    const query = `SELECT video_id FROM anal_videos WHERE video_id = $1`;
+    const values = [videoId];
+
+    try {
+        const res = await pool.query(query, values);
+
+        return res.rowCount ? res.rowCount > 0 : false;
+    } catch (err) {
+        console.error("Error checking if video exists", err);
+
+        return false;
+    }
+}
+
+// TODO: Return type
+export async function getVideoData(videoId: string) {
+    const query = `SELECT views, likes, comments, entry_added AS time FROM anal_video_history WHERE video_id = $1 ORDER BY entry_added ASC`;
+    const values = [videoId];
+
+    try {
+        const res = await pool.query(query, values);
+
+        return res.rows;
+    } catch (err) {
+        console.error("Error getting video data", err);
     }
 }

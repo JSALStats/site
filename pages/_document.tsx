@@ -13,6 +13,7 @@ export default function Document() {
                     fontSans.variable,
                 )}
             >
+                {/* <script src="https://unpkg.com/react-scan/dist/auto.global.js" /> */}
                 <Main />
                 <NextScript />
             </body>
