@@ -8,6 +8,8 @@
  */
 import cron from "cron";
 
+import { sendMessageCronStartedVideos } from "../../messageHandler";
+
 import {
     getAllChannelIds,
     insertStudioChannel,
@@ -16,6 +18,7 @@ import {
     updateVideoData,
     insertChannel,
 } from "./db";
+
 // serverOnline();
 
 const CronJob = cron.CronJob;
@@ -31,7 +34,7 @@ async function updateChannels() {
     const channels = await getAllChannelIds();
     const channelIds = channels.map((channel) => channel.channel_id).join(",");
     const data = await fetch(
-        `https://youtube.nia-statistics.com/youtube/v3/channels?part=statistics,snippet&id=${channelIds}`,
+        `https://youtube.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${process.env.YOUTUBE_API_KEY}`,
     ).then((res) => res.json());
 
     for (const channel of channels) {
@@ -71,6 +74,9 @@ async function updateAllVideos() {
     const videos = await getAllVideoIds();
     const chunks: any = [];
 
+    if (!videos) return;
+
+    sendMessageCronStartedVideos(videos.length);
     videos?.forEach((_video, index) => {
         if (index % 50 === 0) {
             chunks.push(videos.slice(index, index + 50));
@@ -81,7 +87,7 @@ async function updateAllVideos() {
         const videoIds = chunk.join(",");
 
         await fetch(
-            `https://youtube.nia-statistics.com/youtube/v3/videos?part=statistics&id=${videoIds}`,
+            `https://youtube.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`,
         )
             .then((res) => res.json())
             .then((data) => {

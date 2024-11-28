@@ -10,6 +10,7 @@ import {
     createVideoHistoryTable,
     createVideoTable,
     getChannelData,
+    getLatestVideosOfChannel,
     getVideoData,
 } from "./db";
 const channelsData = JSON.parse(
@@ -43,6 +44,14 @@ app.get("/checkvideo/:videoid", async (req, res) => {
     } else {
         res.status(404).json({ data: false });
     }
+});
+
+app.get("/latestvideos/:channelId", async (req, res) => {
+    const channelId = req.params.channelId;
+
+    const data = await getLatestVideosOfChannel(channelId);
+
+    res.status(200).json(data);
 });
 
 app.get("/analytics/video/:videoid", (req, res) => {

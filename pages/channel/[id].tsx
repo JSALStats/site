@@ -502,29 +502,27 @@ export async function getServerSideProps(context: { query: { id: string } }) {
     const { id } = context.query;
 
     try {
-        const res = await fetch(`https://api.jsalstats.xyz/channel/${id}`);
-        const channelIsStudio = await fetch(`http://localhost:5816/channels`)
-            .then((res) => res.json())
-            .then((data) => {
-                return data.studio.includes(id);
-            });
+        const [channelRes, studioRes] = await Promise.all([
+            fetch(`https://api.jsalstats.xyz/channel/${id}`),
+            fetch(`http://localhost:5816/channels`),
+        ]);
 
-        if (!res.ok) {
-            return {
-                props: {
-                    channelId: id,
-                    data: null,
-                    channelIsStudio: false,
-                },
-            };
+        if (!channelRes.ok) {
+            // idk why this is here, i was told to add this
+            throw new Error("Channel response not ok");
         }
 
-        const data = await res.json();
+        const [channelData, studioData] = await Promise.all([
+            channelRes.json(),
+            studioRes.json(),
+        ]);
+
+        const channelIsStudio = studioData.studio.includes(id);
 
         return {
             props: {
                 channelId: id,
-                data: data,
+                data: channelData,
                 channelIsStudio: channelIsStudio,
             },
         };

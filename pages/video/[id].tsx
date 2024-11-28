@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import NumberFlow from "@number-flow/react";
+import Image from "next/image";
 
 import DefaultLayout from "@/layouts/default";
 import { subtitle } from "@/components/primitives";
@@ -13,7 +14,7 @@ interface PageState {
     studioSubsChartOptions: any;
     analChartOptions: any;
     videoId: string;
-    // TODO: VideoData type
+    // TODO: resVideoData, type
     data: any | null;
     videoIsValid: boolean;
 }
@@ -29,7 +30,7 @@ class IndexPage extends Component<{}, PageState> {
             isLoading: true,
             odometerViews: 0,
             videoId: props.videoId,
-            data: props.data,
+            data: props.videoData,
             videoIsValid: props.videoIsValid,
             studioSubsChartOptions: {
                 chart: {
@@ -248,58 +249,8 @@ class IndexPage extends Component<{}, PageState> {
         };
     }
 
-    fetchData = () => {
-        if (this.state.videoId == null || !this.state.videoIsValid) {
-            return;
-        } else {
-            fetch(`https://studio.jsalstats.xyz/subcount`)
-                .then((response) => response.json())
-                .then((data) => {
-                    const subs = data[this.state.videoId];
-
-                    // Update the chart data
-                    this.setState((prevState) => {
-                        const newDataPoint = [Date.now(), subs];
-                        let updatedData = [
-                            ...prevState.studioSubsChartOptions.series[0].data,
-                            newDataPoint,
-                        ];
-
-                        if (updatedData.length > 1800) {
-                            updatedData.shift();
-                        }
-                        if (updatedData.length == 2) {
-                            console.log(updatedData[1]);
-                            if (updatedData[1][0] < updatedData[0][0] + 1000) {
-                                updatedData.shift();
-                            }
-                        }
-
-                        return {
-                            odometerViews: subs,
-                            studioSubsChartOptions: {
-                                ...prevState.studioSubsChartOptions,
-                                series: [
-                                    {
-                                        ...prevState.studioSubsChartOptions
-                                            .series[0],
-                                        data: updatedData,
-                                    },
-                                ],
-                            },
-                            isLoading: false,
-                        };
-                    });
-                })
-                .catch((error) => {
-                    console.log(error);
-                    this.setState({ isLoading: false });
-                });
-        }
-    };
-
     fetchAnal = async () => {
-        if (this.state.videoId == null || this.state.data == null) {
+        if (this.state.videoId == null || !this.state.videoIsValid) {
             return;
         } else {
             try {
@@ -343,7 +294,8 @@ class IndexPage extends Component<{}, PageState> {
                                 },
                             ],
                         },
-                        odometerViews: 0 || 0,
+                        odometerViews:
+                            this.state.data.data.items[0].statistics.viewCount,
                     }));
                 } else {
                     this.setState({
@@ -371,18 +323,14 @@ class IndexPage extends Component<{}, PageState> {
     }
 
     render() {
-        if (
-            this.state.videoId == null ||
-            this.state.data == null ||
-            !this.state.videoIsValid
-        ) {
+        if (this.state.videoId == null || !this.state.videoIsValid) {
             // Redirect to 404
             if (typeof window != "undefined") {
                 window.location.href = "/404";
             }
         }
 
-        if (this.state.data) {
+        if (this.state.videoIsValid) {
             return (
                 <DefaultLayout>
                     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 max-w-[100%] ml-auto mr-auto">
@@ -395,31 +343,35 @@ class IndexPage extends Component<{}, PageState> {
                                 width={1500}
                             /> */}
                             <div className="relative z-10 flex items-center bg-gray-900 p-6 rounded-full bg-opacity-90">
-                                {/* {this.state.data ? (
+                                {this.state.data ? (
                                     <Image
                                         alt="User Avatar"
-                                        className="w-20 h-20 rounded-full mr-4 opacity-100 border-red-500 border-4"
+                                        className="mr-4 opacity-100 border-red-500 border-4"
                                         height={174}
-                                        src={this.state.data?.info.channelIcon}
+                                        src={`https://i.ytimg.com/vi/${this.state.videoId}/maxresdefault.jpg`}
                                         width={174}
                                     />
-                                ) : null} */}
-                                {/* <div>
+                                ) : null}
+                                <div>
                                     <h2
                                         className="text-white text-lg font-semibold  opacity-100"
                                         style={{ fontSize: "32px" }}
                                     >
-                                        {this.state.data?.info.name.length > 30
-                                            ? `${this.state.data?.info.name.slice(0, 30)}...`
-                                            : this.state.data?.info.name}
+                                        {
+                                            this.state.data?.data.items[0]
+                                                .snippet.title
+                                        }
                                     </h2>
                                     <p
                                         className="text-gray-500  opacity-100"
                                         style={{ fontSize: "16px" }}
                                     >
-                                        {this.state.videoId}
+                                        {
+                                            this.state.data?.data.items[0]
+                                                .snippet.channelTitle
+                                        }
                                     </p>
-                                </div> */}
+                                </div>
                             </div>
                         </div>
                         <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
@@ -467,25 +419,18 @@ export async function getServerSideProps(context: { query: { id: string } }) {
     const { id } = context.query;
 
     try {
-        const res = await fetch(`http://localhost:5816/analytics/video/${id}`);
+        const res = await fetch(`http://localhost:5816/checkvideo/${id}`);
+        const videoIsValid = res.ok;
 
-        if (!res.ok) {
-            return {
-                props: {
-                    videoId: id,
-                    data: null,
-                    videoIsValid: false,
-                },
-            };
-        }
-
-        const data = await res.json();
+        const resVideoData = await fetch(
+            `http://localhost:5817/videos?part=snippet,statistics&id=${id}`,
+        ).then((res) => res.json());
 
         return {
             props: {
                 videoId: id,
-                data: data,
-                videoIsValid: true,
+                videoIsValid,
+                videoData: resVideoData,
             },
         };
     } catch (error) {
@@ -494,8 +439,8 @@ export async function getServerSideProps(context: { query: { id: string } }) {
         return {
             props: {
                 videoId: id,
-                data: null,
                 videoIsValid: false,
+                videoData: null,
             },
         };
     }

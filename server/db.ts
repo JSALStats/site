@@ -303,3 +303,17 @@ export async function getVideoData(videoId: string) {
         console.error("Error getting video data", err);
     }
 }
+
+// TODO: Return type
+export async function getLatestVideosOfChannel(channelId: string) {
+    const query = `SELECT * FROM anal_videos WHERE channel_id = $1 ORDER BY video_uploaded DESC LIMIT 5`;
+    const values = [channelId];
+
+    try {
+        const res = await pool.query(query, values);
+
+        return res.rows;
+    } catch (err) {
+        console.error("Error getting latest videos", err);
+    }
+}
