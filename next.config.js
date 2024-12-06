@@ -40,5 +40,5 @@ const nextConfig = {
 };
 
 module.exports = MillionLint.next({
-    enabled: true
+    enabled: true,
 })(nextConfig);
