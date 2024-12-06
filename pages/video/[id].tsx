@@ -5,18 +5,18 @@ import NumberFlow from "@number-flow/react";
 import Image from "next/image";
 
 import DefaultLayout from "@/layouts/default";
-import { ChannelData } from "@/types/data";
 import { subtitle } from "@/components/primitives";
 
 interface PageState {
     hasError: boolean;
     isLoading: boolean;
-    odometerSubs: number;
+    odometerViews: number;
     studioSubsChartOptions: any;
     analChartOptions: any;
-    channelId: string;
-    data: ChannelData | null;
-    channelIsStudio: boolean;
+    videoId: string;
+    // TODO: resVideoData, type
+    data: any | null;
+    videoIsValid: boolean;
 }
 
 class IndexPage extends Component<{}, PageState> {
@@ -28,10 +28,10 @@ class IndexPage extends Component<{}, PageState> {
         this.state = {
             hasError: false,
             isLoading: true,
-            odometerSubs: 0,
-            channelId: props.channelId,
-            data: props.data,
-            channelIsStudio: props.channelIsStudio,
+            odometerViews: 0,
+            videoId: props.videoId,
+            data: props.videoData,
+            videoIsValid: props.videoIsValid,
             studioSubsChartOptions: {
                 chart: {
                     backgroundColor: "transparent",
@@ -127,7 +127,7 @@ class IndexPage extends Component<{}, PageState> {
                 },
                 series: [
                     {
-                        name: "Subscribers",
+                        name: "Views",
                         data: [],
                         showInLegend: false,
                         marker: { enabled: false },
@@ -146,7 +146,7 @@ class IndexPage extends Component<{}, PageState> {
                     zoomType: "x",
                 },
                 title: {
-                    text: "Subscribers",
+                    text: "Views",
                     style: {
                         color: "gray",
                         font: "Roboto Medium",
@@ -234,7 +234,7 @@ class IndexPage extends Component<{}, PageState> {
                 },
                 series: [
                     {
-                        name: "Subscribers",
+                        name: "Views",
                         data: [],
                         showInLegend: false,
                         marker: { enabled: false },
@@ -249,76 +249,23 @@ class IndexPage extends Component<{}, PageState> {
         };
     }
 
-    fetchData = () => {
-        if (
-            this.state.channelIsStudio == false ||
-            this.state.channelId == null ||
-            !this.state.channelIsStudio
-        ) {
-            return;
-        } else {
-            fetch(`https://studio.jsalstats.xyz/subcount`)
-                .then((response) => response.json())
-                .then((data) => {
-                    const subs = data[this.state.channelId];
-
-                    // Update the chart data
-                    this.setState((prevState) => {
-                        const newDataPoint = [Date.now(), subs];
-                        let updatedData = [
-                            ...prevState.studioSubsChartOptions.series[0].data,
-                            newDataPoint,
-                        ];
-
-                        if (updatedData.length > 1800) {
-                            updatedData.shift();
-                        }
-                        if (updatedData.length == 2) {
-                            if (updatedData[1][0] < updatedData[0][0] + 1000) {
-                                updatedData.shift();
-                            }
-                        }
-
-                        return {
-                            odometerSubs: subs,
-                            studioSubsChartOptions: {
-                                ...prevState.studioSubsChartOptions,
-                                series: [
-                                    {
-                                        ...prevState.studioSubsChartOptions
-                                            .series[0],
-                                        data: updatedData,
-                                    },
-                                ],
-                            },
-                            isLoading: false,
-                        };
-                    });
-                })
-                .catch((error) => {
-                    console.error(error);
-                    this.setState({ isLoading: false });
-                });
-        }
-    };
-
     fetchAnal = async () => {
-        if (this.state.channelId == null || this.state.data == null) {
+        if (this.state.videoId == null || !this.state.videoIsValid) {
             return;
         } else {
             try {
                 const response = await fetch(
-                    `/api/channel/${this.state.channelId}`,
+                    `/api/video/${this.state.videoId}`,
                 );
 
                 if (response.status === 200) {
                     const data = await response.json();
                     const updatedData = data
                         .filter((entry: any, index: number, array: any[]) => {
-                            const entryDate = new Date(entry.subs_api_hit);
+                            const entryDate = new Date(entry.time);
                             const nextEntryDate =
                                 index < array.length - 1
-                                    ? new Date(array[index + 1].subs_api_hit)
+                                    ? new Date(array[index + 1].time)
                                     : null;
 
                             return (
@@ -329,19 +276,13 @@ class IndexPage extends Component<{}, PageState> {
                             );
                         })
                         .map((entry: any) => [
-                            new Date(entry.subs_api_hit).getTime(),
-                            entry.subs_api,
+                            new Date(entry.time).getTime(),
+                            entry.views,
                         ])
                         .sort(
                             (a: [number, number], b: [number, number]) =>
                                 a[0] - b[0],
                         );
-
-                    // Add the current timestamp to the data
-                    updatedData.push([
-                        new Date().getTime(),
-                        this.state.data?.data.subsApi || 0,
-                    ]);
 
                     this.setState((prevState) => ({
                         analChartOptions: {
@@ -353,9 +294,8 @@ class IndexPage extends Component<{}, PageState> {
                                 },
                             ],
                         },
-                        odometerSubs: this.state.channelIsStudio
-                            ? prevState.odometerSubs
-                            : this.state.data?.data.subsApi || 0,
+                        odometerViews:
+                            this.state.data.data.items[0].statistics.viewCount,
                     }));
                 } else {
                     this.setState({
@@ -372,9 +312,8 @@ class IndexPage extends Component<{}, PageState> {
     };
 
     componentDidMount() {
+        // this.fetchData();
         this.fetchAnal();
-        this.fetchData();
-        setInterval(this.fetchData, 5000);
     }
 
     componentWillUnmount() {
@@ -384,16 +323,14 @@ class IndexPage extends Component<{}, PageState> {
     }
 
     render() {
-        if (this.state.channelId == null || this.state.data == null) {
+        if (this.state.videoId == null || !this.state.videoIsValid) {
             // Redirect to 404
             if (typeof window != "undefined") {
                 window.location.href = "/404";
             }
-
-            return null;
         }
 
-        if (this.state.data) {
+        if (this.state.videoIsValid) {
             return (
                 <DefaultLayout>
                     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 max-w-[100%] ml-auto mr-auto">
@@ -409,9 +346,9 @@ class IndexPage extends Component<{}, PageState> {
                                 {this.state.data ? (
                                     <Image
                                         alt="User Avatar"
-                                        className="w-20 h-20 rounded-full mr-4 opacity-100 border-red-500 border-4"
+                                        className="mr-4 opacity-100 border-red-500 border-4"
                                         height={174}
-                                        src={this.state.data?.info.channelIcon}
+                                        src={`https://i.ytimg.com/vi/${this.state.videoId}/maxresdefault.jpg`}
                                         width={174}
                                     />
                                 ) : null}
@@ -420,15 +357,19 @@ class IndexPage extends Component<{}, PageState> {
                                         className="text-white text-lg font-semibold  opacity-100"
                                         style={{ fontSize: "32px" }}
                                     >
-                                        {this.state.data?.info.name.length > 30
-                                            ? `${this.state.data?.info.name.slice(0, 30)}...`
-                                            : this.state.data?.info.name}
+                                        {
+                                            this.state.data?.data.items[0]
+                                                .snippet.title
+                                        }
                                     </h2>
                                     <p
                                         className="text-gray-500  opacity-100"
                                         style={{ fontSize: "16px" }}
                                     >
-                                        {this.state.channelId}
+                                        {
+                                            this.state.data?.data.items[0]
+                                                .snippet.channelTitle
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -440,37 +381,13 @@ class IndexPage extends Component<{}, PageState> {
                                         duration: 2000,
                                         easing: "ease-out",
                                     }}
-                                    value={this.state.odometerSubs}
+                                    value={this.state.odometerViews}
                                 />
                             </div>
                             <div className="text-gray-400 mt-2 center-text">
-                                Subscribers
+                                Views
                             </div>
                         </div>
-
-                        {/* Realtime Studio Subs */}
-                        {this.state.channelIsStudio && (
-                            <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
-                                <div
-                                    className={subtitle({
-                                        class: "text-center text-white",
-                                    })}
-                                >
-                                    Studio Count
-                                </div>
-                                <div className="w-full">
-                                    <HighchartsReact
-                                        highcharts={Highcharts}
-                                        options={
-                                            this.state.studioSubsChartOptions
-                                        }
-                                    />
-                                    <p className="text-danger text-small mt-2">
-                                        Studio counts update every 5 seconds!
-                                    </p>
-                                </div>
-                            </div>
-                        )}
 
                         <div className="w-full bg-gray-800 p-4 rounded-lg flex flex-col justify-center items-center">
                             <div
@@ -502,28 +419,18 @@ export async function getServerSideProps(context: { query: { id: string } }) {
     const { id } = context.query;
 
     try {
-        const [channelRes, studioRes] = await Promise.all([
-            fetch(`https://api.jsalstats.xyz/channel/${id}`),
-            fetch(`http://localhost:5816/channels`),
-        ]);
+        const res = await fetch(`http://localhost:5816/checkvideo/${id}`);
+        const videoIsValid = res.ok;
 
-        if (!channelRes.ok) {
-            // idk why this is here, i was told to add this
-            throw new Error("Channel response not ok");
-        }
-
-        const [channelData, studioData] = await Promise.all([
-            channelRes.json(),
-            studioRes.json(),
-        ]);
-
-        const channelIsStudio = studioData.studio.includes(id);
+        const resVideoData = await fetch(
+            `http://localhost:5817/videos?part=snippet,statistics&id=${id}`,
+        ).then((res) => res.json());
 
         return {
             props: {
-                channelId: id,
-                data: channelData,
-                channelIsStudio: channelIsStudio,
+                videoId: id,
+                videoIsValid,
+                videoData: resVideoData,
             },
         };
     } catch (error) {
@@ -531,9 +438,9 @@ export async function getServerSideProps(context: { query: { id: string } }) {
 
         return {
             props: {
-                channelId: id,
-                data: null,
-                channelIsStudio: false,
+                videoId: id,
+                videoIsValid: false,
+                videoData: null,
             },
         };
     }

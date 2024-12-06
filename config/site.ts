@@ -2,8 +2,7 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
     name: "JSALStats",
-    description:
-        "Make beautiful websites regardless of your design experience.",
+    description: "The home of YouTube analytics for JackSucksAtLife!",
     navItems: [
         {
             label: "Home",
